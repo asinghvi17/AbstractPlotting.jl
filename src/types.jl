@@ -26,10 +26,13 @@ const FRect2D = Rect2D{Float32}
 
 "A generic, three dimensional rectangle."
 const Rect3D{T} = Rect{3, T}
+
 "An float valued, three dimensional rectangle."
 const FRect3D = Rect3D{Float32}
+
 "An integer valued, three dimensional rectangle."
 const IRect3D = Rect3D{Int}
+
 "An integer valued, two dimensional rectangle."
 const IRect2D = Rect2D{Int}
 
@@ -103,7 +106,8 @@ end
     FRect(x, y, w, h)
 
 Creates a two dimensional rectangle, at origin (x, y)
-and with width w and height h
+and with width w and height h.  Formally defined as the
+Cartesian product of the intervals (x, y) and (w, h).
 """
 function FRect(x, y, w, h)
     HyperRectangle{2, Float32}(Vec2f0(x, y), Vec2f0(w, h))
