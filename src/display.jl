@@ -23,17 +23,6 @@ function register_backend!(backend::AbstractBackend)
 end
 
 
-const has_ffmpeg = Ref(false)
-
-function __init__()
-    pushdisplay(PlotDisplay())
-    has_ffmpeg[] = try
-        success(`ffmpeg -h`)
-    catch
-        false
-    end
-end
-
 function Base.display(d::PlotDisplay, scene::Scene)
     use_display[] || throw(MethodError(display, (d, scene)))
     try
@@ -47,9 +36,9 @@ function Base.display(d::PlotDisplay, scene::Scene)
     end
 end
 
-Base.showable(mime::MIME, scene::Scene) = backend_showable(current_backend[], mime, scene)
+Base.showable(mime::MIME{M}, scene::Scene) where M = backend_showable(current_backend[], mime, scene)
 # ambig
-Base.showable(mime::MIME"application/json", ::Scene) = backend_showable(current_backend[], mime, scene)
+Base.showable(mime::MIME"application/json", scene::Scene) = backend_showable(current_backend[], mime, scene)
 
 # have to be explicit with mimetypes to avoid ambiguity
 
@@ -120,11 +109,28 @@ function Stepper(scene, path)
     Stepper(scene, path, 1)
 end
 
-function FileIO.save(filename::String, scene::Scene)
-    open(filename, "w") do s
-        show(IOContext(s, :full_fidelity => true), MIME"image/png"(), scene)
+format2mime(::Type{FileIO.format"PNG"}) = MIME"image/png"()
+format2mime(::Type{FileIO.format"SVG"}) = MIME"image/svg+xml"()
+format2mime(::Type{FileIO.format"JPEG"}) = MIME"image/jpeg"()
+
+# Allow format to be overridden with first argument
+"""
+Saves a scene to png/svg!
+Resolution can be specified, via `save("path", scene, resolution = (1000, 1000))`!
+"""
+function FileIO.save(
+        f::FileIO.File{F}, scene::Scene;
+        resolution = size(scene)
+    ) where F
+    println(FileIO.filename(f))
+    if resolution !== size(scene)
+        resize!(scene, resolution)
+    end
+    open(FileIO.filename(f), "w") do s
+        show(IOContext(s, :full_fidelity => true), format2mime(F), scene)
     end
 end
+
 """
     step!(s::Stepper)
 steps through a `Makie.Stepper` and outputs a file with filename `filename-step.jpg`.
@@ -162,7 +168,6 @@ Replays the serialized events recorded with `record_events` in `path` in `scene`
 """
 replay_events(scene::Scene, path::String) = replay_events(()-> nothing, scene, path)
 function replay_events(f, scene::Scene, path::String)
-    display(scene)
     events = open(io-> deserialize(io), path)
     sort!(events, by = first)
     for i in 1:length(events)
@@ -178,11 +183,14 @@ function replay_events(f, scene::Scene, path::String)
             end
         end
         f()
-        yield()
         if i < length(events)
             t2, (field, value) = events[i + 1]
             # min sleep time 0.001
-            (t2 - t1 > 0.001) && sleep(t2 - t1)
+            if (t2 - t1 > 0.001)
+                sleep(t2 - t1)
+            else
+                yield()
+            end
         end
     end
 end

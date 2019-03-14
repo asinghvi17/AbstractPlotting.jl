@@ -9,7 +9,8 @@ using Serialization # serialize events
 using FreeType, FreeTypeAbstraction, UnicodeFun
 using LinearAlgebra, Statistics
 import ImageMagick, FileIO
-using Printf: @sprintf # @sprintf macro is required for scientific notation
+import FileIO: save
+using Printf: @sprintf
 
 using Base: RefValue
 using Base.Iterators: repeated, drop
@@ -142,6 +143,7 @@ export plot!, plot
 
 export Stepper, step!, replay_events, record_events, RecordEvents, record, VideoStream
 export VideoStream, recordframe!, record
+export save
 
 # default icon for Makie
 function icon()
@@ -161,5 +163,30 @@ function logo()
     end
     FileIO.load(cached_logo[])
 end
+
+
+
+const has_ffmpeg = Ref(false)
+
+const config_path = joinpath(homedir(), ".config", "makie", "theme.jl")
+
+function __init__()
+    pushdisplay(PlotDisplay())
+    has_ffmpeg[] = try
+        success(`ffmpeg -h`)
+    catch
+        false
+    end
+    if isfile(config_path)
+        theme = include(config_path)
+        if theme isa Attributes
+            set_theme!(theme)
+        else
+            @warn("Found config file in $(config_path), which doesn't return an instance of Attributes. Ignoring faulty file!")
+        end
+    end
+end
+
+
 
 end # module
