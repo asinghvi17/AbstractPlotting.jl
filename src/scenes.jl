@@ -207,7 +207,7 @@ plots(scene::SceneLike) = scene.plots
 const _forced_update_scheduled = Ref(false)
 
 """
-Returns wether a scene needs updating
+Returns whether a scene needs to be updated
 """
 function must_update()
     val = _forced_update_scheduled[]
@@ -216,7 +216,7 @@ function must_update()
 end
 
 """
-Forces to rerender the scnee
+Forces the scene to be re-rendered
 """
 function force_update!()
     _forced_update_scheduled[] = true

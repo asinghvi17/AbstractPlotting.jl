@@ -172,6 +172,11 @@ end
 ispixelcam(x::Union{PixelCamera, Camera2D}) = true
 ispixelcam(x) = false
 
+"""
+    `update!(p::Scene)`
+
+Updates a `Scene` and all its children.
+"""
 function update!(p::Scene)
     p.updated[] = true
     for c in p.children
